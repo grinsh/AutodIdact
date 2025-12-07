@@ -24,6 +24,22 @@ const apiService = {
     return res.json();
   },
 
+  getSchools: async () => {
+      const res = await fetch(`${API_URL}/api/schools`);
+      const data = await res.json();
+      return data;
+  },
+  login: async(schoolCode, username) => {
+    const res = await fetch(`${API_URL}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schoolCode, username })
+      });
+
+    const data = await res.json();
+    return { ok: res.ok, data};
+  },
+
   checkAssignment: async (code, assignment, studentName, studentEmail) => {
     const res = await fetch(`${API_URL}/api/check-assignment`, {
       method: "POST",
@@ -60,7 +76,7 @@ const apiService = {
 };
 
 // 🎯 דף הכניסה החדש — בחירת בית ספר + שם משתמש + התחברות
-const LoginPage = ({ onLogin, loading }) => {
+const  LoginPage = ({ onLogin, loading }) => {
   const [schools, setSchools] = useState([]);
   const [schoolCode, setSchoolCode] = useState("");
   const [username, setUsername] = useState("");
@@ -68,18 +84,18 @@ const LoginPage = ({ onLogin, loading }) => {
 
   // טעינת רשימת בתי ספר
   useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/schools`);
-        const data = await res.json();
-        setSchools(data);
-      } catch (err) {
-        console.error(err);
-        setError("שגיאה בטעינת בתי הספר");
-      }
-    };
-    fetchSchools();
-  }, []);
+  const fetchSchools = async () => {
+    try {
+      const data = await apiService.getSchools();
+      setSchools(data);
+    } catch (err) {
+      console.error(err);
+      setError("שגיאה בטעינת בתי הספר");
+    }
+  };
+
+  fetchSchools();
+}, []);
 
   // התחברות
   const handleLogin = async () => {
@@ -91,19 +107,12 @@ const LoginPage = ({ onLogin, loading }) => {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ schoolCode, username })
-      });
+      const { ok, data } = await apiService.login(schoolCode, username.trim());
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (!ok) {
         setError(data.error || "שגיאה בהתחברות");
         return;
       }
-
       // שולחים את ה-user שהגיע מהשרת ל-App
       onLogin(data.user);
 

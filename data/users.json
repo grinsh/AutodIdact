@@ -21,6 +21,13 @@
       "email": "ronit@email.com",
       "courses": [2, 3],
       "schoolCode": "003"
+    },
+    {
+      "id": 4,
+      "name": "כניסה חופשית",
+      "email": "",
+      "courses": [4],
+      "schoolCode": "004"
     }
   ]
 }

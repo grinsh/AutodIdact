@@ -149,7 +149,7 @@ app.post('/api/login', (req, res) => {
   const { schoolCode, username } = req.body;
   try 
   {
-    const  schools  = require('./data/schools.json'); // נניח שיש לך קובץ schools.json
+    const  schools  = require('./data/schools.json'); 
     const school = schools.find(s => s.code === schoolCode);
 
     const { users } = require('./data/users.json');
