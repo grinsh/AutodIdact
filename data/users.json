@@ -1,33 +1,48 @@
 {
-  
   "users": [
     {
       "id": 1,
       "name": "עינת כהן",
       "email": "einat@email.com",
-      "courses": [1, 2, 4],
-      "schoolCode": "001"
+      "courses": [
+        1,
+        2,
+        4
+      ],
+      "schoolCode": "001",
+      "marks": []
     },
     {
       "id": 2,
       "name": "שירה לביא",
       "email": "shira@email.com",
-      "courses": [1, 3],
-      "schoolCode": "002"
+      "courses": [
+        1,
+        3
+      ],
+      "schoolCode": "002",
+      "marks": []
     },
     {
       "id": 3,
       "name": "רונית מישל",
       "email": "ronit@email.com",
-      "courses": [2, 3],
-      "schoolCode": "003"
+      "courses": [
+        2,
+        3
+      ],
+      "schoolCode": "003",
+      "marks": []
     },
     {
       "id": 4,
       "name": "כניסה חופשית",
       "email": "",
-      "courses": [4],
-      "schoolCode": "004"
+      "courses": [
+        4
+      ],
+      "schoolCode": "004",
+      "marks": []
     }
   ]
 }

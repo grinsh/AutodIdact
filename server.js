@@ -5,12 +5,14 @@ const path = require('path');
 const OpenAI = require('openai');
 const nodemailer = require('nodemailer');
 const { error } = require('console');
+const fs = require('fs').promises;
+const path = require('path')
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use((req,res,next)=>{
-  res.header("Cross-Origin-Resource-Policy","cross-origin");
+app.use((req, res, next) => {
+  res.header("Cross-Origin-Resource-Policy", "cross-origin");
   next();
 })
 app.use(express.json());
@@ -28,6 +30,32 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// שמירת הציון בקובץ users.json
+app.post('/api/save-mark', async (req, res) => {
+  const { studentId, courseId, chapterId, grade, feedback } = req.body;
+  try {
+    const filePath = path.join(__dirname, 'data', 'users.json');
+    const fileData = await fs.readFile(filePath, 'utf-8');
+    const usersData = JSON.parse(fileData);
+
+    const user = usersData.users.find(u => u.id === Number(studentId));
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+
+    }
+    const newMark = {
+      courseId,
+      chapterId,
+      grade,
+      feedback
+    }
+    user.marks.push(newMark);
+    await fs.writeFile(filePath, JSON.stringify(usersData, null, 2));
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to fetch ' })
+  }
+})
 
 // 📌 בדיקת קוד עם OpenAI
 app.post('/api/check-assignment', async (req, res) => {
@@ -151,9 +179,8 @@ app.get('/api/school/:schoolId/students', (req, res) => {
 // 🔑 התחברות לפי קוד בית ספר ושם משתמש
 app.post('/api/login', (req, res) => {
   const { schoolCode, username } = req.body;
-  try 
-  {
-    const  schools  = require('./data/schools.json'); 
+  try {
+    const schools = require('./data/schools.json');
     const school = schools.find(s => s.code === schoolCode);
 
     const { users } = require('./data/users.json');
