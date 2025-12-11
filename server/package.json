@@ -1,0 +1,32 @@
+{
+  "name": "vibe-coding",
+  "version": "1.0.0",
+  "description": "אתר אינטראקטיבי ללימוד WEB",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "nodemailer": "^6.9.1",
+    "nodemon": "^3.1.11",
+    "openai": "^6.10.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
