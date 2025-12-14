@@ -26,19 +26,19 @@ const apiService = {
   },
 
   getSchools: async () => {
-      const res = await fetch(`${API_URL}/api/schools`);
-      const data = await res.json();
-      return data;
+    const res = await fetch(`${API_URL}/api/schools`);
+    const data = await res.json();
+    return data;
   },
-  login: async(schoolCode, username) => {
+  login: async (schoolCode, username) => {
     const res = await fetch(`${API_URL}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ schoolCode, username })
-      });
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ schoolCode, username })
+    });
 
     const data = await res.json();
-    return { ok: res.ok, data};
+    return { ok: res.ok, data };
   },
 
   checkAssignment: async (code, assignment, studentName, studentEmail) => {
@@ -51,6 +51,7 @@ const apiService = {
     return res.json();
   },
 
+  // call to the function in the server that send email with the final mark
   submitAssignment: async (
     studentName,
     studentEmail,
@@ -74,10 +75,35 @@ const apiService = {
     if (!res.ok) throw new Error("Failed to submit assignment");
     return res.json();
   },
+
+  // call the function in server that write the mark in the file .
+  saveMark: async (
+
+    studentId,
+    courseId,
+    chapterId,
+    grade,
+    feedback
+  ) => {
+    const res = await fetch(`${API_URL}/api/save-mark`, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentId,
+        courseId,
+        chapterId,
+        grade,
+        feedback
+      })
+    })
+    if (!res.ok)
+      throw new Error('failed to save mark');
+    return res.json();
+  },
 };
 
 // 🎯 דף הכניסה החדש — בחירת בית ספר + שם משתמש + התחברות
-const  LoginPage = ({ onLogin, loading }) => {
+const LoginPage = ({ onLogin, loading }) => {
   const [schools, setSchools] = useState([]);
   const [schoolCode, setSchoolCode] = useState("");
   const [username, setUsername] = useState("");
@@ -85,18 +111,18 @@ const  LoginPage = ({ onLogin, loading }) => {
 
   // טעינת רשימת בתי ספר
   useEffect(() => {
-  const fetchSchools = async () => {
-    try {
-      const data = await apiService.getSchools();
-      setSchools(data);
-    } catch (err) {
-      console.error(err);
-      setError("שגיאה בטעינת בתי הספר");
-    }
-  };
+    const fetchSchools = async () => {
+      try {
+        const data = await apiService.getSchools();
+        setSchools(data);
+      } catch (err) {
+        console.error(err);
+        setError("שגיאה בטעינת בתי הספר");
+      }
+    };
 
-  fetchSchools();
-}, []);
+    fetchSchools();
+  }, []);
 
   // התחברות
   const handleLogin = async () => {
@@ -311,6 +337,16 @@ const ChapterPage = ({ user, chapter, course, onBack }) => {
     setLoading(true);
     setError(null);
     try {
+      // call to function un server that write the mark to the file
+      const saveMarkResponse = await apiService.saveMark(
+        user.id,
+        course.id,
+        chapter.id,
+        feedback.grade,
+        feedback.feedback
+      )
+      console.log(saveMarkResponse);
+      // call to the function in apiService in order to send email to the student 
       await apiService.submitAssignment(
         user.name,
         user.email,

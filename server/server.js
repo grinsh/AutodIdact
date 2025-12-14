@@ -1,7 +1,6 @@
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const OpenAI = require('openai');
 const nodemailer = require('nodemailer');
 const { error } = require('console');
@@ -37,12 +36,14 @@ app.post('/api/save-mark', async (req, res) => {
     const filePath = path.join(__dirname, 'data', 'users.json');
     const fileData = await fs.readFile(filePath, 'utf-8');
     const usersData = JSON.parse(fileData);
+    console.log('filePath', filePath);
 
     const user = usersData.users.find(u => u.id === Number(studentId));
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
 
     }
+    console.log('user', user);
     const newMark = {
       courseId,
       chapterId,
@@ -51,6 +52,8 @@ app.post('/api/save-mark', async (req, res) => {
     }
     user.marks.push(newMark);
     await fs.writeFile(filePath, JSON.stringify(usersData, null, 2));
+    return res.json({ success: true });
+
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'Failed to fetch ' })
