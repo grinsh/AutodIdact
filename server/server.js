@@ -1,11 +1,12 @@
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const OpenAI = require("openai");
-const nodemailer = require("nodemailer");
-const { error } = require("console");
-const fs = require("fs").promises;
-require("dotenv").config();
+
+const express = require('express');
+const cors = require('cors');
+const OpenAI = require('openai');
+const nodemailer = require('nodemailer');
+const { error } = require('console');
+const fs = require('fs').promises;
+const path = require('path')
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -24,8 +25,11 @@ const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    pass: process.env.EMAIL_PASSWORD
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 // שמירת הציון בקובץ users.json
@@ -36,23 +40,25 @@ app.post("/api/save-mark", async (req, res) => {
     const filePath = path.join(__dirname, "data", "users.json");
     const fileData = await fs.readFile(filePath, "utf-8");
     const usersData = JSON.parse(fileData);
-    console.log("arrived to /api/save-mark");
+    const date = new Date();
+    console.log('filePath', filePath);
 
     const user = usersData.users.find((u) => u.id === Number(studentId));
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+    console.log('user', user);
     const newMark = {
       courseId,
       chapterId,
       grade,
       feedback,
-    };
-    console.log("arrived to /api/save-mark", newMark);
-
+      date
+    }
     user.marks.push(newMark);
     await fs.writeFile(filePath, JSON.stringify(usersData, null, 2));
-    res.json({ message: "success" });
+    return res.json({ success: true });
+
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Failed to fetch " });
@@ -176,13 +182,38 @@ app.get("/api/school/:schoolId/students", (req, res) => {
   const schoolId = req.params.schoolId;
   console.log("schoolId is: ", schoolId);
   try {
-    const users = require("./data/users.json"); // נניח שיש לך קובץ students.json
-    const filteredUsers = users.filter((user) => user.schoolId === schoolId);
+    const users = require('./data/users.json');
+    const filteredUsers = users.filter(user => user.schoolId === schoolId);
     res.json(filteredUsers);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch users for school" });
   }
 });
+
+// קבלת הציונים של תלמיד מסוים בקורס מסוים
+app.get('/api/users/:userId/courses/:courseId/marks', (req, res) => {
+
+  try {
+    console.log(" GET /api/users/:userId/courses/:courseId/marks called!");
+    const { userId, courseId } = req.params;
+    console.log(" Params:", userId, courseId);
+    const data = require('./data/users.json');
+    const users = data.users;
+    const user = users.find(u => u.id === Number(userId))
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const marks = user.marks.filter(mark => mark.courseId === Number(courseId))
+    res.json(marks)
+  }
+  catch (error) {
+    res.status(500).json({
+      error: ' Failed to retrieve the students marks for the chapter'
+    });
+  }
+
+})
 
 // 🔑 התחברות לפי קוד בית ספר ושם משתמש
 app.post("/api/login", (req, res) => {
