@@ -4,6 +4,7 @@ import React, {
   createContext,
   useContext,
   useRef,
+  useMemo,
 } from "react";
 import {
   ChevronRight,
@@ -14,7 +15,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import './App.css';
+import "./App.css";
 
 // 📦 API Service
 const API_URL = process.env.REACT_APP_API_URL;
@@ -28,8 +29,12 @@ const apiService = {
   },
 
   getCourses: async () => {
-    const res = await fetch(`${API_URL}/api/courses`);
-    return res.json();
+    try {
+      const res = await fetch(`${API_URL}/api/courses`);
+      return res.json();
+    } catch (e) {
+      throw e;
+    }
   },
 
   getSchools: async () => {
@@ -57,7 +62,13 @@ const apiService = {
     if (!res.ok) throw new Error("Failed to check assignment");
     return res.json();
   },
-
+  getStatistic: async (userId, courseId) => {
+    const res = await fetch(
+      `${API_URL}/api/users/${userId}/courses/${courseId}`
+    );
+    return res.json();
+  },
+  // call to the function in the server that send email with the final mark
   submitAssignment: async (
     studentName,
     studentEmail,
@@ -79,6 +90,23 @@ const apiService = {
       }),
     });
     if (!res.ok) throw new Error("Failed to submit assignment");
+    return res.json();
+  },
+
+  // call the function in server that write the mark in the file .
+  saveMark: async (studentId, courseId, chapterId, grade, feedback) => {
+    const res = await fetch(`${API_URL}/api/save-mark`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentId,
+        courseId,
+        chapterId,
+        grade,
+        feedback,
+      }),
+    });
+    if (!res.ok) throw new Error("failed to save mark");
     return res.json();
   },
 };
@@ -137,7 +165,8 @@ const LoginPage = ({ onLogin, loading }) => {
       <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-purple-600 mb-2">
-            🎵 Vibe-Coding
+            {" "}
+            ברוכה הבאה !{" "}
           </h1>
           <p className="text-gray-600">התחברות למערכת הלמידה</p>
         </div>
@@ -192,6 +221,8 @@ const LoginPage = ({ onLogin, loading }) => {
 
 // 📚 דף הקורסים
 const DashboardPage = ({ user, onSelectCourse, courses, loading }) => {
+  console.log("user:", user);
+  console.log("courses:", courses);
   const userCourses = courses.filter((c) => user.courses.includes(c.id));
 
   return (
@@ -199,7 +230,7 @@ const DashboardPage = ({ user, onSelectCourse, courses, loading }) => {
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            ברוכה בחזרה, {user.name}! 👋
+            ברוכה הבאה, {user.name}! 👋
           </h1>
           <p className="text-gray-600">בחרי קורס כדי להמשיך</p>
         </div>
@@ -211,20 +242,12 @@ const DashboardPage = ({ user, onSelectCourse, courses, loading }) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {userCourses.map((course) => (
-              <div
+              <CourseCard
                 key={course.id}
-                onClick={() => onSelectCourse(course)}
-                className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition transform hover:scale-105"
-              >
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                  {course.name}
-                </h2>
-                <p className="text-gray-600 mb-4">{course.description}</p>
-                <div className="flex items-center text-purple-600 font-semibold">
-                  <span>{course.chapters.length} פרקים</span>
-                  <ChevronRight className="w-5 h-5 mr-2" />
-                </div>
-              </div>
+                userId={user.id}
+                course={course}
+                onSelectCourse={onSelectCourse}
+              />
             ))}
           </div>
         )}
@@ -233,8 +256,130 @@ const DashboardPage = ({ user, onSelectCourse, courses, loading }) => {
   );
 };
 
-// 📖 דף הקורס
-const CoursePage = ({ user, course, onSelectChapter, onBack, courses }) => {
+// רכיב תצוגה שמראה את הסטטיסטיקה של קורס
+// 🎨 רכיב תצוגה שמראה את הסטטיסטיקה של קורס
+
+const CourseCard = ({ userId, course, onSelectCourse }) => {
+  const [stat, setStat] = useState(null);
+  const [loading, setLoading] = useState(true);
+  console.log("course:", course);
+  console.log("stat:", stat);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await apiService.getStatistic(userId, course.id);
+        setStat(data);
+      } catch (error) {
+        console.error("שגיאה בטעינת סטטיסטיקה:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (course?.id && userId) {
+      fetchStats();
+    }
+  }, [userId, course?.id]);
+
+  if (!course) return null;
+
+  // 🔒 המרות בטוחות
+  const { percentDone, percentToDo, subCount } = useMemo(() => {
+    return {
+      percentDone: Number(stat?.percentDone) || 0,
+      percentToDo: Number(stat?.percentToDo) || 0,
+      subCount: Number(stat?.numberOfSubbmitions) || 0,
+    };
+  }, [stat]);
+
+  const chaptersCount = Array.isArray(course.chapters)
+    ? course.chapters.length
+    : 0;
+
+  const courseName =
+    typeof course.name === "string"
+      ? course.name
+      : JSON.stringify(course.name ?? "");
+
+  const courseDescription =
+    typeof course.description === "string"
+      ? course.description
+      : JSON.stringify(course.description ?? "");
+
+  const pieData = [
+    { name: "בוצע", value: Number(stat?.percentDone) || 0 },
+    { name: "נותר", value: Number(stat?.percentToDo) || 0 },
+  ];
+
+  console.log("🧩 pieData:", pieData);
+
+  return (
+    <div
+      onClick={() => onSelectCourse(course)}
+      className="bg-white rounded-2xl shadow-md p-6 cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-gray-100"
+    >
+      {/* 🏷 שם הקורס */}
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">{courseName}</h2>
+
+      {/* 🧾 תיאור הקורס */}
+      <p className="text-gray-600 mb-4">{courseDescription}</p>
+
+      {loading ? (
+        <div className="flex justify-center items-center h-40">
+          <Loader className="w-6 h-6 text-purple-600 animate-spin" />
+        </div>
+      ) : (
+        <>
+          <p className="text-sm text-gray-700 mb-3 text-center">
+            פרקים שבוצעו:{" "}
+            <span className="font-semibold text-purple-700">{subCount}</span>{" "}
+            מתוך {chaptersCount}
+          </p>
+
+          {/* עוגת סטטיסטיקה
+          <div className="flex justify-center">
+            {Array.isArray(pieData) && pieData.length > 0 ? (
+              <PieChart width={180} height={180}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={70}
+                  paddingAngle={3}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={index === 0 ? "#7C3AED" : "#E5E7EB"}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            ) : (
+              <p>אין נתונים להצגה</p>
+            )}
+          </div> */}
+
+          <p className="text-center text-lg font-bold text-purple-700 mt-4">
+            {percentDone}% הושלם
+          </p>
+        </>
+      )}
+    </div>
+  );
+};
+
+// 📖 דף הקורס - מראה את הפרקים שך הקורס המסוים
+const CoursePage = ({
+  user,
+  course,
+  onSelectChapter,
+  onBack,
+  courses,
+  onShowMarks,
+}) => {
   return (
     <div className="min-h-screen bg-gray-50 p-8" dir="rtl">
       <div className="max-w-6xl mx-auto">
@@ -247,6 +392,13 @@ const CoursePage = ({ user, course, onSelectChapter, onBack, courses }) => {
 
         <h1 className="text-4xl font-bold text-gray-800 mb-2">{course.name}</h1>
         <p className="text-gray-600 mb-8">{course.description}</p>
+
+        <button
+          onClick={onShowMarks}
+          className="mb-6 bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          📊 הציונים שלי בקורס
+        </button>
 
         <h2 className="text-2xl font-bold text-gray-800 mb-4">📚 הפרקים:</h2>
         <div className="space-y-4">
@@ -275,7 +427,7 @@ const CoursePage = ({ user, course, onSelectChapter, onBack, courses }) => {
   );
 };
 
-// 📝 דף הפרק
+// 📝 דף הפרק - מראה את ההסרטות והמטלה של הפרק
 const ChapterPage = ({ user, chapter, course, onBack }) => {
   const [code, setCode] = useState("");
   const [feedback, setFeedback] = useState(null);
@@ -318,6 +470,16 @@ const ChapterPage = ({ user, chapter, course, onBack }) => {
     setLoading(true);
     setError(null);
     try {
+      // call to function un server that write the mark to the file
+      const saveMarkResponse = await apiService.saveMark(
+        user.id,
+        course.id,
+        chapter.id,
+        feedback.grade,
+        feedback.feedback
+      );
+      console.log(saveMarkResponse);
+      // call to the function in apiService in order to send email to the student
       await apiService.submitAssignment(
         user.name,
         user.email,
@@ -506,7 +668,7 @@ const VideoPlayer = ({ filename, width = 640, height = 360 }) => {
           const htmlRaw = await response.text();
           const htmlClean = htmlRaw.replace(/<style[\s\S]*?<\/style>/gi, "");
 
-          setFade(true); 
+          setFade(true);
           setTimeout(() => setBlockedHtml(htmlClean), 300);
         }
       } catch (err) {
@@ -559,6 +721,92 @@ const VideoPlayer = ({ filename, width = 640, height = 360 }) => {
   );
 };
 
+
+const MarksPage = ({ user, course, onBack }) => {
+  const courseMarks = user.marks.filter((m) => m.courseId === course.id);
+
+  const getMarkForChapter = (chapterId) =>
+    courseMarks.find((m) => m.chapterId === chapterId);
+  return (
+    <div className="min-h-screen bg-gray-50 py-10 px-6" dir="rtl">
+      {/* כפתור חזרה */}
+      <div className="mb-6 flex items-center gap-2">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-semibold transition"
+        >
+          <span className="text-xl">←</span> חזרה לקורס
+        </button>
+      </div>
+
+      {/* כותרת */}
+      <h1 className="text-4xl font-bold mb-8 text-gray-800">
+        ציונים – {course.name}
+      </h1>
+
+      {/* רשימת הציונים */}
+      <div className="space-y-4">
+        {course.chapters.map((chapter) => {
+          const mark = getMarkForChapter(chapter.id);
+          const gradeColor =
+            mark?.grade >= 85
+              ? "text-green-600"
+              : mark?.grade >= 60
+              ? "text-yellow-600"
+              : "text-red-600";
+
+          return (
+            <div
+              key={chapter.id}
+              className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition-shadow"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <strong className="text-lg text-gray-800">
+                  {chapter.title}
+                </strong>
+                <span className={`font-semibold ${gradeColor}`}>
+                  {mark ? `${mark.grade}/100` : "לא הוגש"}
+                </span>
+              </div>
+
+              {mark && (
+                <p className="text-gray-600 text-sm leading-relaxed border-t pt-2">
+                  📝 {mark.feedback}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const LogOutButton = ({ onLogOut }) => {
+  return (
+    <div className="fixed top-4 left-4 z-50">
+      <button
+        onClick={onLogOut}
+        className="
+          flex items-center gap-2
+          bg-gradient-to-r from-red-500 to-pink-500
+          text-white
+          px-4 py-2
+          rounded-full
+          font-semibold
+          shadow-lg
+          hover:from-red-600 hover:to-pink-600
+          hover:scale-105
+          transition
+        "
+      >
+        התנתקות
+        <span className="text-lg">🚪</span>
+      </button>
+    </div>
+  );
+};
+
 // 🎯 App הראשי
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -567,6 +815,11 @@ export default function App() {
   const [selectedChapter, setSelectedChapter] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // redirect to the login page
+  const handleLogOut = () => {
+    setCurrentPage("login");
+  };
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -603,6 +856,9 @@ export default function App() {
     }
   };
 
+  const handleSeeMarks = () => {
+    setCurrentPage("marks");
+  };
   return (
     <div>
       {currentPage === "login" && (
@@ -623,6 +879,7 @@ export default function App() {
           onSelectChapter={handleSelectChapter}
           onBack={handleBack}
           courses={courses}
+          onShowMarks={handleSeeMarks}
         />
       )}
       {currentPage === "chapter" && (
@@ -633,6 +890,14 @@ export default function App() {
           onBack={handleBack}
         />
       )}
+      {currentPage === "marks" && (
+        <MarksPage
+          user={currentUser}
+          course={selectedCourse}
+          onBack={() => setCurrentPage("course")}
+        />
+      )}
+      {currentPage !== "login" && <LogOutButton onLogOut={handleLogOut} />}
     </div>
   );
 }

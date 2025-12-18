@@ -17,7 +17,6 @@ app.use((req, res, next) => {
   res.header("Cross-Origin-Resource-Policy", "cross-origin");
   next();
 });
-
 app.use(express.json());
 
 // Middleware פשוט לבדיקה (לדוגמה)
@@ -42,22 +41,74 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// הפונקציה מחזירה אובייקט שמכיל 3 שדות:
+// 1 - כמה פרקים הושלמו
+// 2 - כמה אחוז מהקורס הושלם
+// 3 - כמה אחוז לא הושלם 
+app.get('/api/users/:userId/courses/:courseId', async (req, res) => {
+  const userId = req.params.userId;
+  const courseId = req.params.courseId;
+  try {
+    const data = require('./data/users.json');
+    const users = data.users;
+    const user = users.find(u => u.id === Number(userId));
+    if (!user)
+      return res.status(404).json({
+        error: " user not found"
+      })
+    const dataCourses = require('./data/courses.json').courses;
+    const course = dataCourses.find(c => c.id === Number(courseId))
+    if (!course)
+      return res.status(404).json({
+        error: " course not found"
+      })
+    const submissionsForCourse = user.marks.filter(
+      mark => mark.courseId === Number(courseId)
+    );
+
+    const numberOfSubbmitions = (submissionsForCourse.length===0) ? 0 : submissionsForCourse.length;
+    const numberOfChapters = course.chapters.length;
+    const percentDone = (numberOfSubbmitions * 100) / numberOfChapters;
+    const percentToDo = 100 - percentDone;
+    res.json(
+      {
+        "numberOfSubbmitions": numberOfSubbmitions,
+        "percentDone": percentDone,
+        "percentToDo": percentToDo
+      }
+    );
+  }
+  catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      error: "failed to fetch the number of subbmitions"
+    })
+  }
+})
+
+
 // ✉️ הגדרת nodemailer
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
+    pass: process.env.EMAIL_PASSWORD
   },
+  tls: {
+    rejectUnauthorized: false
+  }
 });
 
 // שמירת הציון בקובץ users.json
 app.post("/api/save-mark", async (req, res) => {
   const { studentId, courseId, chapterId, grade, feedback } = req.body;
+
   try {
     const filePath = path.join(__dirname, "data", "users.json");
     const fileData = await fs.readFile(filePath, "utf-8");
     const usersData = JSON.parse(fileData);
+    const date = new Date();
+    console.log('filePath', filePath);
 
     const user = usersData.users.find((u) => u.id === Number(studentId));
     if (!user) {
@@ -68,9 +119,12 @@ app.post("/api/save-mark", async (req, res) => {
       chapterId,
       grade,
       feedback,
-    };
+      date
+    }
     user.marks.push(newMark);
     await fs.writeFile(filePath, JSON.stringify(usersData, null, 2));
+    return res.json({ success: true });
+
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Failed to fetch " });
@@ -194,13 +248,38 @@ app.get("/api/school/:schoolId/students", (req, res) => {
   const schoolId = req.params.schoolId;
   console.log("schoolId is: ", schoolId);
   try {
-    const users = require("./data/users.json"); // נניח שיש לך קובץ students.json
-    const filteredUsers = users.filter((user) => user.schoolId === schoolId);
+    const users = require('./data/users.json');
+    const filteredUsers = users.filter(user => user.schoolId === schoolId);
     res.json(filteredUsers);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch users for school" });
   }
 });
+
+// קבלת הציונים של תלמיד מסוים בקורס מסוים
+app.get('/api/users/:userId/courses/:courseId/marks', (req, res) => {
+
+  try {
+    console.log(" GET /api/users/:userId/courses/:courseId/marks called!");
+    const { userId, courseId } = req.params;
+    console.log(" Params:", userId, courseId);
+    const data = require('./data/users.json');
+    const users = data.users;
+    const user = users.find(u => u.id === Number(userId))
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const marks = user.marks.filter(mark => mark.courseId === Number(courseId))
+    res.json(marks)
+  }
+  catch (error) {
+    res.status(500).json({
+      error: ' Failed to retrieve the students marks for the chapter'
+    });
+  }
+
+})
 
 // 🔑 התחברות לפי קוד בית ספר ושם משתמש
 app.post("/api/login", (req, res) => {
