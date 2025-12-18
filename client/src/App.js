@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from "react";
+import React, { useState, useEffect, createContext, useContext, useMemo } from "react";
 import {
   ChevronRight,
   Play,
@@ -10,8 +10,11 @@ import {
 } from "lucide-react";
 
 // 📦 API Service
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-//const API_URL = 'https://autodidact.co.il';
+const API_URL = process.env.REACT_APP_API_URL ;
+
+if(API_URL!="http://localhost:5000")
+  throw new Error("No env file or variables~~~~~~~!!!!")
+// const API_URL = "https://autodidact.co.il";
 
 const apiService = {
   getUsers: async () => {
@@ -33,7 +36,7 @@ const apiService = {
     const res = await fetch(`${API_URL}/api/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ schoolCode, username })
+      body: JSON.stringify({ schoolCode, username }),
     });
 
     const data = await res.json();
@@ -50,7 +53,9 @@ const apiService = {
     return res.json();
   },
   getStatistic: async (userId, courseId) => {
-    const res = await fetch(`${API_URL}/api/users/${userId}/courses/${courseId}`);
+    const res = await fetch(
+      `${API_URL}/api/users/${userId}/courses/${courseId}`
+    );
     return res.json();
   },
   // call to the function in the server that send email with the final mark
@@ -79,27 +84,19 @@ const apiService = {
   },
 
   // call the function in server that write the mark in the file .
-  saveMark: async (
-
-    studentId,
-    courseId,
-    chapterId,
-    grade,
-    feedback
-  ) => {
+  saveMark: async (studentId, courseId, chapterId, grade, feedback) => {
     const res = await fetch(`${API_URL}/api/save-mark`, {
-      method: 'POST',
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         studentId,
         courseId,
         chapterId,
         grade,
-        feedback
-      })
-    })
-    if (!res.ok)
-      throw new Error('failed to save mark');
+        feedback,
+      }),
+    });
+    if (!res.ok) throw new Error("failed to save mark");
     return res.json();
   },
 };
@@ -144,7 +141,6 @@ const LoginPage = ({ onLogin, loading }) => {
       }
       // שולחים את ה-user שהגיע מהשרת ל-App
       onLogin(data.user);
-
     } catch (err) {
       console.error(err);
       setError("תקלה בשרת");
@@ -210,7 +206,6 @@ const LoginPage = ({ onLogin, loading }) => {
   );
 };
 
-
 // 📚 דף הקורסים
 const DashboardPage = ({ user, onSelectCourse, courses, loading }) => {
   console.log("user:", user);
@@ -273,9 +268,13 @@ const CourseCard = ({ userId, course, onSelectCourse }) => {
   if (!course) return null;
 
   // 🔒 המרות בטוחות
-  const percentDone = Number(stat?.percentDone) || 0;
-  const percentToDo = Number(stat?.percentToDo) || 0;
-  const subCount = Number(stat?.numberOfSubbmitions) || 0;
+  const { percentDone, percentToDo, subCount } = useMemo(() => {
+    return {
+      percentDone: Number(stat?.percentDone) || 0,
+      percentToDo: Number(stat?.percentToDo) || 0,
+      subCount: Number(stat?.numberOfSubbmitions) || 0,
+    };
+  }, [stat]);
 
   const chaptersCount = Array.isArray(course.chapters)
     ? course.chapters.length
@@ -296,9 +295,6 @@ const CourseCard = ({ userId, course, onSelectCourse }) => {
     { name: "נותר", value: Number(stat?.percentToDo) || 0 },
   ];
 
-
-
-  console.log("🧩 pieData:", pieData);
 
   return (
     <div
@@ -321,11 +317,35 @@ const CourseCard = ({ userId, course, onSelectCourse }) => {
         <>
           <p className="text-sm text-gray-700 mb-3 text-center">
             פרקים שבוצעו:{" "}
-            <span className="font-semibold text-purple-700">
-              {subCount}
-            </span>{" "}
+            <span className="font-semibold text-purple-700">{subCount}</span>{" "}
             מתוך {chaptersCount}
           </p>
+
+          {/* עוגת סטטיסטיקה
+          <div className="flex justify-center">
+            {Array.isArray(pieData) && pieData.length > 0 ? (
+              <PieChart width={180} height={180}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={70}
+                  paddingAngle={3}
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={index === 0 ? "#7C3AED" : "#E5E7EB"}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            ) : (
+              <p>אין נתונים להצגה</p>
+            )}
+          </div> */}
 
           <p className="text-center text-lg font-bold text-purple-700 mt-4">
             {percentDone}% הושלם
@@ -336,15 +356,18 @@ const CourseCard = ({ userId, course, onSelectCourse }) => {
   );
 };
 
-
-
-
-// 📖 דף הקורס - מראה את הפרקים שך הקורס המסוים 
-const CoursePage = ({ user, course, onSelectChapter, onBack, courses, onShowMarks }) => {
+// 📖 דף הקורס - מראה את הפרקים שך הקורס המסוים
+const CoursePage = ({
+  user,
+  course,
+  onSelectChapter,
+  onBack,
+  courses,
+  onShowMarks,
+}) => {
   return (
     <div className="min-h-screen bg-gray-50 p-8" dir="rtl">
       <div className="max-w-6xl mx-auto">
-
         <button
           onClick={onBack}
           className="mb-6 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg font-semibold hover:bg-gray-400 transition"
@@ -439,9 +462,9 @@ const ChapterPage = ({ user, chapter, course, onBack }) => {
         chapter.id,
         feedback.grade,
         feedback.feedback
-      )
+      );
       console.log(saveMarkResponse);
-      // call to the function in apiService in order to send email to the student 
+      // call to the function in apiService in order to send email to the student
       await apiService.submitAssignment(
         user.name,
         user.email,
@@ -623,7 +646,6 @@ const ChapterPage = ({ user, chapter, course, onBack }) => {
   );
 };
 
-
 const MarksPage = ({ user, course, onBack }) => {
   const courseMarks = user.marks.filter((m) => m.courseId === course.id);
 
@@ -654,8 +676,8 @@ const MarksPage = ({ user, course, onBack }) => {
             mark?.grade >= 85
               ? "text-green-600"
               : mark?.grade >= 60
-                ? "text-yellow-600"
-                : "text-red-600";
+              ? "text-yellow-600"
+              : "text-red-600";
 
           return (
             <div
@@ -682,30 +704,7 @@ const MarksPage = ({ user, course, onBack }) => {
       </div>
     </div>
   );
-  // return (
-  //   <div className="p-8" dir="rtl">
-  //     <button onClick={onBack} className="mb-4">← חזרה</button>
-
-  //     <h1 className="text-3xl mb-6">ציונים – {course.name}</h1>
-
-  //     {course.chapters.map((chapter) => {
-  //       const mark = getMarkForChapter(chapter.id);
-
-  //       return (
-  //         <div key={chapter.id} className="bg-white p-4 mb-3 rounded shadow">
-  //           <div className="flex justify-between">
-  //             <strong>{chapter.title}</strong>
-  //             {mark ? `${mark.grade}/100` : "לא הוגש"}
-  //           </div>
-
-  //           {mark && <p className="mt-2 text-gray-700">{mark.feedback}</p>}
-  //         </div>
-  //       );
-  //     })}
-  //   </div>
-  // );
 };
-
 
 const LogOutButton = ({ onLogOut }) => {
   return (
@@ -732,7 +731,6 @@ const LogOutButton = ({ onLogOut }) => {
   );
 };
 
-
 // 🎯 App הראשי
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -742,11 +740,10 @@ export default function App() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
 
-
   // redirect to the login page
   const handleLogOut = () => {
-    setCurrentPage("login")
-  }
+    setCurrentPage("login");
+  };
 
   useEffect(() => {
 
@@ -785,8 +782,8 @@ export default function App() {
   };
 
   const handleSeeMarks = () => {
-    setCurrentPage("marks")
-  }
+    setCurrentPage("marks");
+  };
   return (
     <div>
       {currentPage === "login" && (
@@ -816,7 +813,6 @@ export default function App() {
           chapter={selectedChapter}
           course={selectedCourse}
           onBack={handleBack}
-
         />
       )}
       {currentPage === "marks" && (
@@ -826,11 +822,7 @@ export default function App() {
           onBack={() => setCurrentPage("course")}
         />
       )}
-      {currentPage !== "login" && (
-        <LogOutButton
-          onLogOut={handleLogOut}
-        />
-      )}
+      {currentPage !== "login" && <LogOutButton onLogOut={handleLogOut} />}
     </div>
   );
 }
