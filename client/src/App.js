@@ -1,4 +1,10 @@
-import React, { useState, useEffect, createContext, useContext, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  useMemo,
+} from "react";
 import {
   ChevronRight,
   Play,
@@ -10,8 +16,7 @@ import {
 } from "lucide-react";
 
 // 📦 API Service
-const API_URL = process.env.REACT_APP_API_URL ;
-
+const API_URL = process.env.REACT_APP_API_URL;
 
 // const API_URL = "https://autodidact.co.il";
 
@@ -22,8 +27,12 @@ const apiService = {
   },
 
   getCourses: async () => {
-    const res = await fetch(`${API_URL}/api/courses`);
-    return res.json();
+    try {
+      const res = await fetch(`${API_URL}/api/courses`);
+      return res.json();
+    } catch (e) {
+      throw e;
+    }
   },
 
   getSchools: async () => {
