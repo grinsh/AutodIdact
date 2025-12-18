@@ -12,8 +12,7 @@ import {
 // 📦 API Service
 const API_URL = process.env.REACT_APP_API_URL ;
 
-if(API_URL!="http://localhost:5000")
-  throw new Error("No env file or variables~~~~~~~!!!!")
+
 // const API_URL = "https://autodidact.co.il";
 
 const apiService = {
