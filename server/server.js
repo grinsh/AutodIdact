@@ -249,9 +249,33 @@ app.get("/api/videos/:filename", async (req, res) => {
     s3Object.Body.pipe(res);
   } catch (err) {
     console.error("video proxy error:", err);
+
+    // אם נטפרי חסם – שליחת iframe שמחקה את דף החסימה
+    if (err?.$metadata?.httpStatusCode === 418 && err?.body?.iframe?.src) {
+      const iframeSrc = err.body.iframe.src;
+      res.status(418).send(`
+        <!DOCTYPE html>
+        <html lang="he" dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>וידאו חסום</title>
+          <style>
+            body, html { margin:0; padding:0; height:100%; }
+            iframe { position:fixed; top:0; left:0; width:100%; height:100%; border:none; }
+          </style>
+        </head>
+        <body>
+          <iframe src="${iframeSrc}" id="netfree_block_iframe" name="netfree-block-iframe"></iframe>
+        </body>
+        </html>
+      `);
+      return;
+    }
+
     res.status(500).send("Failed to load video");
   }
 });
+
 
 //שירות ריאקט סטטי
 app.use(express.static(path.join(__dirname, "build")));

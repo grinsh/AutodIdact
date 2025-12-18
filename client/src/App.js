@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 
 // 📦 API Service
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API_URL = process.env.REACT_APP_API_URL;
+const REACT_APP_VIDEOS_URL = process.env.REACT_APP_VIDEOS_URL;
 //const API_URL = 'https://autodidact.co.il';
 
 const apiService = {
@@ -371,15 +372,8 @@ const ChapterPage = ({ user, chapter, course, onBack }) => {
                 <p className="text-sm text-gray-600 mb-2 font-semibold">
                   {video.title}
                 </p>
-                <video
-                  width="100%"
-                  height="300"
-                  controls
-                  className="rounded-lg bg-black"
-                >
-                  <source src={video.url} type="video/mp4" />
-                  הדפדפן שלך לא תומך בסרטוני HTML5
-                </video>
+                  <VideoPlayer filename={video.url} />
+
               </div>
             ))}
           </div>
@@ -499,13 +493,40 @@ const ChapterPage = ({ user, chapter, course, onBack }) => {
 
 const VideoPlayer = ({ filename }) => {
   const videoRef = useRef(null);
+  const [blockedHtml, setBlockedHtml] = useState(null);
 
+  useEffect(() => {
+    const checkVideo = async () => {
+      try {
+        const response = await fetch(
+          `${REACT_APP_VIDEOS_URL}/${filename}`
+        );
+
+        if (response.status === 418) {
+          // וידאו חסום – קבלת HTML של iframe
+          const html = await response.text();
+          setBlockedHtml(html);
+        }
+      } catch (err) {
+        console.error("Error fetching video:", err);
+      }
+    };
+
+    checkVideo();
+  }, [filename]);
+
+  if (blockedHtml) {
+    // מציג iframe במקום הוידאו
+    return <div dangerouslySetInnerHTML={{ __html: blockedHtml }} />;
+  }
+
+  // מציג וידאו רגיל
   return (
     <div>
-      <h2>Video Player</h2>
+      {/* <h2>Video Player</h2> */}
       <video ref={videoRef} controls width="640" height="360">
         <source
-          src={`http://localhost:5000/api/videos/${filename}`}
+          src={`${REACT_APP_VIDEOS_URL}/${filename}`}
           type="video/mp4"
         />
         Your browser does not support the video tag.
@@ -560,7 +581,6 @@ export default function App() {
 
   return (
     <div>
-      <VideoPlayer filename="decision tree - regression.mp4"/>
       {currentPage === "login" && (
         <LoginPage onLogin={handleLogin} loading={loading} />
       )}
