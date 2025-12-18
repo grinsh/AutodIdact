@@ -233,7 +233,6 @@ app.get("/api/videos/:filename", async (req, res) => {
   const { filename } = req.params;
 
   console.log("proxy video request:", filename);
-
   try {
     const s3Object = await s3.send(
       new GetObjectCommand({
