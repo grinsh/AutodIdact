@@ -1,5 +1,4 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   ChevronRight,
   Play,
@@ -250,13 +249,10 @@ const DashboardPage = ({ user, onSelectCourse, courses, loading }) => {
 };
 
 // רכיב תצוגה שמראה את הסטטיסטיקה של קורס 
-// 🎨 רכיב תצוגה שמראה את הסטטיסטיקה של קורס
 
 const CourseCard = ({ userId, course, onSelectCourse }) => {
   const [stat, setStat] = useState(null);
   const [loading, setLoading] = useState(true);
-  console.log("course:", course);
-  console.log("stat:", stat);
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -330,32 +326,6 @@ const CourseCard = ({ userId, course, onSelectCourse }) => {
             </span>{" "}
             מתוך {chaptersCount}
           </p>
-
-          {/* עוגת סטטיסטיקה
-          <div className="flex justify-center">
-            {Array.isArray(pieData) && pieData.length > 0 ? (
-              <PieChart width={180} height={180}>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={50}
-                  outerRadius={70}
-                  paddingAngle={3}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={index === 0 ? "#7C3AED" : "#E5E7EB"}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            ) : (
-              <p>אין נתונים להצגה</p>
-            )}
-          </div> */}
 
           <p className="text-center text-lg font-bold text-purple-700 mt-4">
             {percentDone}% הושלם
