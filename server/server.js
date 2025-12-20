@@ -235,31 +235,6 @@ app.get("/api/school/:schoolId/students", (req, res) => {
   }
 });
 
-// קבלת הציונים של תלמיד מסוים בקורס מסוים
-app.get('/api/users/:userId/courses/:courseId/marks', (req, res) => {
-
-  try {
-    console.log(" GET /api/users/:userId/courses/:courseId/marks called!");
-    const { userId, courseId } = req.params;
-    console.log(" Params:", userId, courseId);
-    const data = require('./data/users.json');
-    const users = data.users;
-    const user = users.find(u => u.id === Number(userId))
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const marks = user.marks.filter(mark => mark.courseId === Number(courseId))
-    res.json(marks)
-  }
-  catch (error) {
-    res.status(500).json({
-      error: ' Failed to retrieve the students marks for the chapter'
-    });
-  }
-
-})
-
 // 🔑 התחברות לפי קוד בית ספר ושם משתמש
 app.post("/api/login", (req, res) => {
   const { schoolCode, username } = req.body;

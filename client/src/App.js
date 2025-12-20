@@ -10,10 +10,8 @@ import {
 } from "lucide-react";
 
 // 📦 API Service
-const API_URL = process.env.REACT_APP_API_URL ;
+const API_URL = process.env.REACT_APP_API_URL;
 
-if(API_URL!="http://localhost:5000")
-  throw new Error("No env file or variables~~~~~~~!!!!")
 // const API_URL = "https://autodidact.co.il";
 
 const apiService = {
@@ -208,8 +206,6 @@ const LoginPage = ({ onLogin, loading }) => {
 
 // 📚 דף הקורסים
 const DashboardPage = ({ user, onSelectCourse, courses, loading }) => {
-  console.log("user:", user);
-  console.log("courses:", courses);
   const userCourses = courses.filter((c) => user.courses.includes(c.id));
 
   return (
@@ -320,32 +316,6 @@ const CourseCard = ({ userId, course, onSelectCourse }) => {
             <span className="font-semibold text-purple-700">{subCount}</span>{" "}
             מתוך {chaptersCount}
           </p>
-
-          {/* עוגת סטטיסטיקה
-          <div className="flex justify-center">
-            {Array.isArray(pieData) && pieData.length > 0 ? (
-              <PieChart width={180} height={180}>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={50}
-                  outerRadius={70}
-                  paddingAngle={3}
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={index === 0 ? "#7C3AED" : "#E5E7EB"}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            ) : (
-              <p>אין נתונים להצגה</p>
-            )}
-          </div> */}
 
           <p className="text-center text-lg font-bold text-purple-700 mt-4">
             {percentDone}% הושלם
