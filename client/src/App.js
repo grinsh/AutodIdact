@@ -110,13 +110,13 @@ const apiService = {
     return res.json();
   },
   checkIfSubmitted: async (userId, courseId, chapterId) => {
-    const result = await fetch(`${API_URL}/api/api/check-submission`, {
+    const res = await fetch(`${API_URL}/api/check-submission`, {
       method: 'POST',
       headers: { "content-Type": "application/json" },
       body: JSON.stringify(
-        userId,
+        {userId,
         courseId,
-        chapterId
+        chapterId}
       )
     });
     if (!res.ok)
@@ -698,7 +698,7 @@ const VideoPlayer = ({ filename, width = 640, height = 360 }) => {
           }}
         >
           <source
-            src={`${REACT_APP_VIDEOS_URL}/${filename}`}
+             src={`${REACT_APP_VIDEOS_URL}/${filename}`}
             type="video/mp4"
           />
           Your browser does not support the video tag.

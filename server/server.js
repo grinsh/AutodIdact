@@ -17,7 +17,7 @@ app.use((req, res, next) => {
   res.header("Cross-Origin-Resource-Policy", "cross-origin");
   next();
 });
-app.use(json());
+app.use(express.json());
 
 // Middleware פשוט לבדיקה (לדוגמה)
 app.use((req, res, next) => {
@@ -89,7 +89,7 @@ app.get('/api/users/:userId/courses/:courseId', async (req, res) => {
 
 
 // ✉️ הגדרת nodemailer
-const transporter = createTransport({
+const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
@@ -105,7 +105,7 @@ app.post("/api/save-mark", async (req, res) => {
   const { studentId, courseId, chapterId, grade, feedback } = req.body;
 
   try {
-    const filePath = join(__dirname, "data", "users.json");
+    const filePath = path.join(__dirname, "data", "users.json");
     const fileData = await fs.readFile(filePath, "utf-8");
     const usersData = JSON.parse(fileData);
     const date = new Date();
@@ -134,6 +134,7 @@ app.post("/api/save-mark", async (req, res) => {
 
 // בדיקה אם המשתמש הגיש כבר מטלה 
 app.post("/api/check-submission", async (req, res) => {
+  console.log(' בדיקה אם המשתמש הגיש כבר מטלה ');
   const { userId, courseId, chapterId } = req.body;
   const users = require('./data/users.json').users;
   const user = users.find(u => u.id === Number(userId))
