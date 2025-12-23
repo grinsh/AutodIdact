@@ -42,6 +42,13 @@ const apiService = {
     const data = await res.json();
     return data;
   },
+
+  getUsers: async () => {
+    const res = await fetch(`${API_URL}/api/users`)
+    const data = await res.json();
+    return data;
+  },
+
   login: async (schoolCode, username) => {
     const res = await fetch(`${API_URL}/api/login`, {
       method: "POST",
@@ -114,9 +121,11 @@ const apiService = {
       method: 'POST',
       headers: { "content-Type": "application/json" },
       body: JSON.stringify(
-        {userId,
-        courseId,
-        chapterId}
+        {
+          userId,
+          courseId,
+          chapterId
+        }
       )
     });
     if (!res.ok)
@@ -128,9 +137,16 @@ const apiService = {
 // 🎯 דף הכניסה החדש — בחירת בית ספר + שם משתמש + התחברות
 const LoginPage = ({ onLogin, loading }) => {
   const [schools, setSchools] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [textSchool, setTextSchool] = useState("");
+  const [filteredSchool, setfilteredSchools] = useState([])
+  const [filteredUsers, setFilteredUsers] = useState([])
   const [schoolCode, setSchoolCode] = useState("");
-  const [username, setUsername] = useState("");
+  const [userID, setUserId] = useState(null);
+  const [textUser, setTextUser] = useState("");
   const [error, setError] = useState("");
+
+
 
   // טעינת רשימת בתי ספר
   useEffect(() => {
@@ -147,17 +163,49 @@ const LoginPage = ({ onLogin, loading }) => {
     fetchSchools();
   }, []);
 
+  // טעינת רשימת המשתמשים
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const users = await apiService.getUsers();
+        setUsers(users);
+      } catch (error) {
+        console.error(error);
+        setError("שגיאה בטעינת המשתמשים")
+      }
+    }
+    fetchUsers();
+  }
+    , [])
+
+  // סינון שמות המשתמשים לפי מה שהמשתמש הכניס
+  useEffect(() => {
+    if (textUser && !userID) {
+      const results = users.filter(user => user.name.toLowerCase().startsWith(textUser))
+      setFilteredUsers(results)
+    }
+  }, [textUser])
+
+
+  // סינון בתי ספר לפי הפלט שהמשתמש מכניס
+  useEffect(() => {
+    if (textSchool && !schoolCode) {
+      const results = schools.filter(school => school.name.toLowerCase().startsWith(textSchool))
+      setfilteredSchools(results)
+    }
+  }, [textSchool])
+
   // התחברות
   const handleLogin = async () => {
     setError("");
 
-    if (!schoolCode || !username.trim()) {
+    if (!schoolCode || !textUser.trim()) {
       setError("נא למלא את כל השדות");
       return;
     }
 
     try {
-      const { ok, data } = await apiService.login(schoolCode, username.trim());
+      const { ok, data } = await apiService.login(schoolCode, textUser.trim());
 
       if (!ok) {
         setError(data.error || "שגיאה בהתחברות");
@@ -170,6 +218,27 @@ const LoginPage = ({ onLogin, loading }) => {
       setError("תקלה בשרת");
     }
   };
+  // כשהמשתמש מכניס input כלשהוא 
+  const onChangeHandlerSchool = (event) => {
+    const value = event.target.value;
+    setTextSchool(value);
+    if (!value) {
+      setfilteredSchools([]);
+      setSchoolCode("");
+      return;
+    }
+  }
+
+  const onChangeHandlerUser = (event) => {
+    const value = event.target.value;
+    setTextUser(value);
+    if (!value) {
+      setFilteredUsers([]);
+      setTextUser("");
+      setUserId(null)
+      return;
+    }
+  }
 
   return (
     <div
@@ -191,18 +260,36 @@ const LoginPage = ({ onLogin, loading }) => {
         {/* בחירת בית ספר */}
         <div className="mb-5">
           <label className="font-semibold">בחרי בית ספר:</label>
-          <select
+          <input
+            type="text"
             className="w-full mt-2 border p-2 rounded-lg"
-            value={schoolCode}
-            onChange={(e) => setSchoolCode(e.target.value)}
-          >
-            <option value="">-- בחרי --</option>
-            {schools.map((school) => (
-              <option key={school.code} value={school.code}>
-                {school.name}
-              </option>
-            ))}
-          </select>
+            value={textSchool}
+            onChange={(e) => {
+              onChangeHandlerSchool(e);
+            }}
+          />
+          {filteredSchool.length > 0 && (
+            <div className="bg-white border rounded-lg shadow mt-2 max-h-48 overflow-y-auto">
+              {filteredSchool.map((school) => (
+                <button
+                  key={school.code}
+                  onClick={(event) => {
+                    setfilteredSchools([]);
+                    setTextSchool(event.target.innerText);
+                    setSchoolCode(school.code);
+                  }}
+                  className="
+                  w-full text-right px-4 py-2
+                  hover:bg-purple-100
+                  transition
+                  border-b last:border-b-0
+                  "
+                >
+                  {school.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* שם משתמש */}
@@ -212,9 +299,29 @@ const LoginPage = ({ onLogin, loading }) => {
             type="text"
             className="w-full mt-2 border p-2 rounded-lg"
             placeholder="הקלידי את שמך..."
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={textUser}
+            onChange={(e) => { onChangeHandlerUser(e); }}
           />
+          {filteredUsers.length > 0 && filteredUsers.map(user =>
+            <button
+              key={user.id}
+              onClick={(event) => {
+                setUserId(user.id)
+                setTextUser(event.target.innerText);
+                setFilteredUsers([]);
+                return;
+              }}
+              className="
+                  w-full text-right px-4 py-2
+                  hover:bg-purple-100
+                  transition
+                  border-b last:border-b-0
+                  "
+            >
+              {user.name}
+            </button>
+          )
+          }
         </div>
 
         {/* כפתור התחברות */}
@@ -426,9 +533,8 @@ const ChapterPage = ({ user, chapter, course, onBack }) => {
     setError(null);
     try {
       const isExistSubmission = await apiService.checkIfSubmitted(user.id, course.id, chapter.id)
-      if(isExistSubmission.isSubmitted)
-      {
-        alert( "הגשת כבר את המטלה לפרק זה, אין באפשרותך להגיש פעם נוספת ! ");
+      if (isExistSubmission.isSubmitted) {
+        alert("הגשת כבר את המטלה לפרק זה, אין באפשרותך להגיש פעם נוספת ! ");
         return;
       }
       const result = await apiService.checkAssignment(
@@ -698,7 +804,7 @@ const VideoPlayer = ({ filename, width = 640, height = 360 }) => {
           }}
         >
           <source
-             src={`${REACT_APP_VIDEOS_URL}/${filename}`}
+            src={`${REACT_APP_VIDEOS_URL}/${filename}`}
             type="video/mp4"
           />
           Your browser does not support the video tag.
