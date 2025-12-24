@@ -19,6 +19,7 @@ import "./App.css";
 
 // 📦 API Service
 const API_URL = process.env.REACT_APP_API_URL;
+const REACT_APP_VIDEOS_URL= process.env.REACT_APP_VIDEOS_URL;
 
 // const API_URL = "https://autodidact.co.il";
 
@@ -244,7 +245,7 @@ const LoginPage = ({ onLogin, loading }) => {
 
         {/* שם משתמש */}
         <div className="mb-5">
-          <label className="font-semibold">שם המשתמש (שם התלמידה):</label>
+          <label className="font-semibold">שם המשתמש:</label>
           <input
             type="text"
             className="w-full mt-2 border p-2 rounded-lg"
@@ -425,8 +426,7 @@ const CoursePage = ({
           {course.chapters.map((chapter, idx) => (
             <div
               key={chapter.id}
-              onClick={() => {
-                // chapter.videos ? onSelectChapter(chapter) : onSelectChapterWithoutVideos;
+              onClick={() => {          
                 if (!chapter.videos || chapter.videos.length === 0) {
                   onSelectChapterWithoutVideos();
                 }
@@ -728,7 +728,7 @@ const VideoPlayer = ({ filename, width = 640, height = 360 }) => {
     const checkVideo = async () => {
       try {
         const response = await fetch(
-          // `${REACT_APP_VIDEOS_URL}/${filename}`
+          `${REACT_APP_VIDEOS_URL}/${filename}`
         );
         if (response.status === 418) {
           const htmlRaw = await response.text();
@@ -872,6 +872,7 @@ const LogOutButton = ({ onLogOut }) => {
     </div>
   );
 };
+
 
 // 🎯 App הראשי
 export default function App() {
