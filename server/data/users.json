@@ -4,11 +4,7 @@
       "id": 1,
       "name": "עינת כהן",
       "email": "einat@email.com",
-      "courses": [
-        1,
-        2,
-        4
-      ],
+      "courses": [1, 2, 4],
       "marks": [
         {
           "courseId": 1,
@@ -24,10 +20,7 @@
       "id": 2,
       "name": "שירה לביא",
       "email": "shira@email.com",
-      "courses": [
-        1,
-        3
-      ],
+      "courses": [1, 3],
       "marks": [],
       "schoolCode": "002"
     },
@@ -35,10 +28,7 @@
       "id": 3,
       "name": "רונית מישל",
       "email": "ronit@email.com",
-      "courses": [
-        2,
-        3
-      ],
+      "courses": [2, 3],
       "marks": [],
       "schoolCode": "003"
     },
@@ -46,9 +36,7 @@
       "id": 4,
       "name": "כניסה חופשית",
       "email": "",
-      "courses": [
-        4
-      ],
+      "courses": [4],
       "marks": [],
       "schoolCode": "004"
     },
@@ -56,11 +44,106 @@
       "id": 5,
       "name": "שושי טעפ",
       "email": "",
-      "courses": [
-        5
-      ],
+      "courses": [5],
       "marks": [],
       "schoolCode": "005"
+    },
+    {
+      "id": 11510,
+      "name": "מרכזת מגמה",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+
+    {
+      "id": 11511,
+      "name": "תמר צבאח",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11512,
+      "name": "אסתי הרשקוביץ",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11513,
+      "name": "מיכל ליימן",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11514,
+      "name": "מרים קפיטס",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11515,
+      "name": "נעמי גדלביץ",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11516,
+      "name": "ללי קרלינסקי",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11517,
+      "name": "צביה מלר",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11518,
+      "name": "אפרת כהן",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11519,
+      "name": "מנוחי בלאט",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11520,
+      "name": "נחמי שפירו",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
+    },
+    {
+      "id": 11521,
+      "name": "אילה קובשקה",
+      "email": "",
+      "courses": [],
+      "marks": [],
+      "schoolCode": "1151"
     }
   ]
 }
