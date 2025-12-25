@@ -199,7 +199,7 @@ app.post("/api/submit-assignment", async (req, res) => {
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: studentEmail,
+    to: process.env.ADMIN_EMAIL,
     subject: `✅ המטלה שלך נבדקה - ${courseName}`,
     html: `
       <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">
@@ -350,6 +350,84 @@ app.get("/api/videos/:filename(*)", async (req, res) => {
   }
 });
 
+
+// 📧 שליחת משוב למנהל המערכת
+app.post("/api/send-feedback", async (req, res) => {
+  const { userName, schoolName, courseName, chapterName, subject, message } = req.body;
+
+  try {
+    // בדיקת שדות חובה
+    if (!userName || !subject || !message) {
+      return res.status(400).json({ 
+        error: "יש למלא את כל השדות החובה" 
+      });
+    }
+
+    // בדירוג אם יש כתובת מנהל במשתנים הסביבה
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+    
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: adminEmail,
+      subject: `📢 משוב מהמערכת - ${subject}`,
+      html: `
+        <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
+          <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; border-bottom: 3px solid #6366f1; padding-bottom: 10px;">📬 משוב חדש מהמערכת</h2>
+            
+            <div style="margin-top: 20px;">
+              <h3 style="color: #666; margin-top: 15px; margin-bottom: 5px;">👤 פרטי המשתמש</h3>
+              <p style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; margin: 0;">
+                <strong>שם:</strong> ${userName}
+              </p>
+              <p style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; margin: 5px 0 0 0;">
+                <strong>בית ספר:</strong> ${schoolName || "לא צוין"}
+              </p>
+              
+              ${courseName ? `
+              <h3 style="color: #666; margin-top: 15px; margin-bottom: 5px;">📚 פרטי הקורס</h3>
+              <p style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; margin: 0;">
+                <strong>קורס:</strong> ${courseName}
+              </p>
+              ${chapterName ? `
+              <p style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; margin: 5px 0 0 0;">
+                <strong>פרק:</strong> ${chapterName}
+              </p>
+              ` : ""}
+              ` : ""}
+              
+              <h3 style="color: #666; margin-top: 15px; margin-bottom: 5px;">📝 הנושא</h3>
+              <p style="background-color: #fff3cd; padding: 10px; border-radius: 4px; margin: 0; border-right: 4px solid #ffc107;">
+                <strong>${subject}</strong>
+              </p>
+              
+              <h3 style="color: #666; margin-top: 15px; margin-bottom: 5px;">💬 הפירוט</h3>
+              <p style="background-color: #f9f9f9; padding: 10px; border-radius: 4px; margin: 0; line-height: 1.6; white-space: pre-wrap;">
+                ${message}
+              </p>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+              <p>הודעה זו נשלחה באופן אוטומטי מהמערכת בתאריך ${new Date().toLocaleString('he-IL')}</p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.json({ 
+      success: true, 
+      message: "ההודעה נשלחה בהצלחה למנהל המערכת" 
+    });
+    
+  } catch (error) {
+    console.error("Feedback email error:", error);
+    res.status(500).json({ 
+      error: "שגיאה בשליחת המשוב" 
+    });
+  }
+});
 
 // Serve React static files from client/build
 app.use(express.static(path.join(__dirname, "../client/build")));
