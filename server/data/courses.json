@@ -183,10 +183,6 @@
           "name": "מבוא ל־Node.js וסביבת עבודה",
           "description": "היכרות עם Node.js, התקנה, הרצה, עבודה עם שורת הפקודה והבנת מודולים",
           "videos": [
-            {
-              "title": "????",
-              "url": "placeholder_autodidact_rtl_full.mp4"
-            }
           ],
           "assignments": [
             {
