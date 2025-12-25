@@ -4,7 +4,9 @@
       "id": 4,
       "name": "כניסה חופשית",
       "email": "",
-      "courses": [4],
+      "courses": [
+        4
+      ],
       "marks": [],
       "schoolCode": "004"
     },
@@ -12,7 +14,9 @@
       "id": 5,
       "name": "שושי טעפ",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "005"
     },
@@ -20,15 +24,27 @@
       "id": 11510,
       "name": "מרכזת מגמה",
       "email": "",
-      "courses": [5],
-      "marks": [],
+      "courses": [
+        5
+      ],
+      "marks": [
+        {
+          "courseId": 5,
+          "chapterId": 2,
+          "grade": 100,
+          "feedback": "כל הכבוד! הקוד שלך מתאים להוראות שהוגדרו במטלה. השלמת את כל הדרישות של המשימה בצורה נהדרת, יעילה ומסודרת. ניתן לראות שאתה מבין את הקונספטים של ניהול קבצים ב Node.js.",
+          "date": "2025-12-25T10:28:06.281Z"
+        }
+      ],
       "schoolCode": "1151"
     },
     {
       "id": 11511,
       "name": "תמר צבאח",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -36,7 +52,9 @@
       "id": 11512,
       "name": "אסתי הרשקוביץ",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -44,7 +62,9 @@
       "id": 11513,
       "name": "מיכל ליימן",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -52,7 +72,9 @@
       "id": 11514,
       "name": "מרים קפיטס",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -60,7 +82,9 @@
       "id": 11515,
       "name": "נעמי גדלביץ",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -68,7 +92,9 @@
       "id": 11516,
       "name": "ללי קרלינסקי",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -76,7 +102,9 @@
       "id": 11517,
       "name": "צביה מלר",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -84,7 +112,9 @@
       "id": 11518,
       "name": "אפרת כהן",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -92,7 +122,9 @@
       "id": 11519,
       "name": "מנוחי בלאט",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -100,7 +132,9 @@
       "id": 11520,
       "name": "נחמי שפירו",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     },
@@ -108,7 +142,9 @@
       "id": 11521,
       "name": "אילה קובשקה",
       "email": "",
-      "courses": [5],
+      "courses": [
+        5
+      ],
       "marks": [],
       "schoolCode": "1151"
     }
