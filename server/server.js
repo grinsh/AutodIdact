@@ -10,9 +10,6 @@ const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken")
 
 require("dotenv").config();
-console.log("ACCESS:", process.env.ACCESS_TOKEN_SECRET);
-console.log("Working directory:", process.cwd());
-
 
 const app = express();
 
@@ -52,11 +49,11 @@ const openai = new OpenAI({
 });
 
 //logout 
-app.post("/api/logout",async (req, res) => {
+app.post("/api/logout", async (req, res) => {
   res.cookie("refreshToken", "", {
     httpOnly: true,
     secure: false,
-    sameSite: "strict",
+    sameSite: "lax",
     expires: new Date(0),
     path: "/api/refresh"
   });
@@ -66,7 +63,8 @@ app.post("/api/logout",async (req, res) => {
 // פונקציה שיוצרת Access Token (טוקן קצר טווח)
 function createAccessToken(user) {
   return jwt.sign(
-    { userId: user.id }, process.env.ACCESS_TOKEN_SECRET, {
+    { userId: user.id, userName: user.name },
+    process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: '15m'
   });
 }
@@ -74,12 +72,28 @@ function createAccessToken(user) {
 // פונקציה שיוצרת Refresh Token (טוקן ארוך טווח)
 function createRefreshToken(user) {
   return jwt.sign(
-    { userId: user.id },
+    { userId: user.id, userName: user.name },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: "1d" }
   )
 }
 
+// בדיקה אם המשתמש הגיש כבר מטלה 
+app.post("/api/check-submission", async (req, res) => {
+  console.log(' בדיקה אם המשתמש הגיש כבר מטלה ');
+  const { userId, courseId, chapterId } = req.body;
+  const users = require('./data/users.json').users;
+  const user = users.find(u => u.id === Number(userId))
+  if (!user) {
+    return res.status(404).json({ error: "User not found" });
+  }
+  const isExistMark = user.marks.find(mark => mark.courseId === Number(courseId) &&
+    mark.chapterId === Number(chapterId))
+  if (isExistMark)
+    res.send({ isSubmitted: true })
+  else
+    res.send({ isSubmitted: false })
+})
 
 app.get("/api/videos/:filename(*)", async (req, res) => {
   const { filename } = req.params;
@@ -154,8 +168,8 @@ app.post("/api/login", (req, res) => {
     // יוצר cookie ושולח  את זה לדפדפן 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false, // בפרודקשן חובה HTTPS
-      sameSite: "strict",
+      secure: false, 
+      sameSite: "lax",
       path: "/api/refresh"
     })
 
@@ -174,10 +188,10 @@ app.post("/api/login", (req, res) => {
 
 // ריענון טוקנים 
 app.post("/api/refresh", (req, res) => {
-  // מחלץ את הטוקן refreshtokrn 
+  // מחלץ את הטוקן refreshtoken 
   const token = req.cookies.refreshToken;
   // אם אין שום טוקן - המשתמש לא מורשה 
-  if (!token) return res.statusCode(401);
+  if (!token) return res.status(401).json({ message: "No refresh token" });
 
   let payload;
   try {
@@ -188,14 +202,14 @@ app.post("/api/refresh", (req, res) => {
     // אם יש שגיאה כלשהי → מחזירים 401 (Unauthorized)
     return res.status(401).json({ message: "Unauthorized" });
   }
-  const user = { id: payload.userId };
+  const user = { id: payload.userId, name: payload.userName };
   const newAcess = createAccessToken(user);
   const newRefresh = createRefreshToken(user);
 
-  res.cookie("refreshToken",newRefresh, {
+  res.cookie("refreshToken", newRefresh, {
     httpOnly: true,
-    secure: false, // בפרודקשן חובה HTTPS
-    sameSite: "strict",
+    secure: false,
+    sameSite: "lax",
     path: "/api/refresh"
   })
   res.json({ accessToken: newAcess });
@@ -211,7 +225,7 @@ app.get("/api/schools", (req, res) => {
   }
 });
 
-// 🔐 Middleware גלובלי שבודק JWT עבור כל בקשה נכנסת
+// Global middleware that checks JWT for every incoming request
 
 app.use((req, res, next) => {
 
@@ -229,11 +243,56 @@ app.use((req, res, next) => {
 
     // שמירת מזהה המשתמש בבקשה לשימוש בהמשך
     req.userId = payload.userId;
+    req.userName = payload.userName;
     next();
   } catch (err) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 });
+
+// middleware that write to logs file before important request
+
+const writeLogMiddlware = async (req, res, next) => {
+  console.log("in the middleWare writeLogMiddlware");
+
+  // הגנה בתוך אותו request
+  if (req.hasLogged) return next();
+  req.hasLogged = true;
+
+  try {
+    const userName = req.userName;
+    const endPoint = req.originalUrl;
+    const filePath = path.join(__dirname, "data", "logs.json");
+
+    const fileData = await fs.readFile(filePath, "utf-8");
+    const json = JSON.parse(fileData);
+    const logs = json.logs || [];
+
+    // הגנה מפני כפילויות בין בקשות קרובות בזמן
+    const alreadyLogged = logs.some(
+      log =>
+        log.userName === userName &&
+        log.endPoint === endPoint &&
+        new Date() - new Date(log.date) < 5000 // פחות מ־5 שניות
+    );
+
+    if (!alreadyLogged) {
+      logs.push({
+        userName,
+        date: new Date().toISOString(),
+        endPoint
+      });
+
+      await fs.writeFile(filePath, JSON.stringify({ logs }, null, 2));
+    }
+
+    next();
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Error writing log" });
+  }
+};
+
 
 // הפונקציה מחזירה אובייקט שמכיל 3 שדות:
 // 1 - כמה פרקים הושלמו
@@ -280,8 +339,6 @@ app.get('/api/users/:userId/courses/:courseId', async (req, res) => {
   }
 })
 
-
-
 // ✉️ הגדרת nodemailer
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -295,7 +352,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // שמירת הציון בקובץ users.json
-app.post("/api/save-mark", async (req, res) => {
+app.post("/api/save-mark", writeLogMiddlware, async (req, res) => {
   const { studentId, courseId, chapterId, grade, feedback } = req.body;
 
   try {
@@ -303,7 +360,6 @@ app.post("/api/save-mark", async (req, res) => {
     const fileData = await fs.readFile(filePath, "utf-8");
     const usersData = JSON.parse(fileData);
     const date = new Date();
-    console.log('filePath', filePath);
 
     const user = usersData.users.find((u) => u.id === Number(studentId));
     if (!user) {
@@ -326,25 +382,9 @@ app.post("/api/save-mark", async (req, res) => {
   }
 });
 
-// בדיקה אם המשתמש הגיש כבר מטלה 
-app.post("/api/check-submission", async (req, res) => {
-  console.log(' בדיקה אם המשתמש הגיש כבר מטלה ');
-  const { userId, courseId, chapterId } = req.body;
-  const users = require('./data/users.json').users;
-  const user = users.find(u => u.id === Number(userId))
-  if (!user) {
-    return res.status(404).json({ error: "User not found" });
-  }
-  const isExistMark = user.marks.find(mark => mark.courseId === Number(courseId) &&
-    mark.chapterId === Number(chapterId))
-  if (isExistMark)
-    res.send({ isSubmitted: true })
-  else
-    res.send({ isSubmitted: false })
-})
 
 // 📌 בדיקת קוד עם OpenAI
-app.post("/api/check-assignment", async (req, res) => {
+app.post("/api/check-assignment", writeLogMiddlware, async (req, res) => {
   const { code, assignment, studentName, studentEmail } = req.body;
 
   try {
@@ -356,6 +396,10 @@ app.post("/api/check-assignment", async (req, res) => {
 \`\`\`
 ${code}
 \`\`\`
+
+עליך להחזיר **אך ורק JSON תקין**, ללא שום טקסט נוסף לפניו או אחריו.
+אם אינך יכול להחזיר JSON תקין — החזר בדיוק את זה: {"error": "Invalid format"}.
+
 
 בדוק את הקוד וחזור בתשובה בפורמט JSON (בעברית) עם השדות הבאים:
 1. "completion_percentage" - אחוז השלמת המטלה (0-100)
@@ -372,8 +416,30 @@ ${code}
       temperature: 0.7,
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    // remove markdown 
+    let raw = response.choices[0].message.content;
+    if (raw.startsWith("```")) {
+      raw = raw.replace(/```json|```/g, "").trim();
+    }
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("❌ לא נמצא JSON תקין בתגובה:", raw);
+      return res.status(500).json({ error: "ה-AI לא החזיר JSON תקין", raw });
+    }
+
+    const cleanJson = jsonMatch[0]; // רק התוכן שבין { ... }
+
+
+    let result;
+    try {
+      result = JSON.parse(cleanJson);
+    }
+    catch (err) {
+      console.error("❌ JSON.parse נכשל. תוכן גולמי:", cleanJson);
+      return res.status(500).json({ error: "ה-AI החזיר JSON לא תקין", raw });
+    }
     res.json(result);
+
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Failed to check assignment" });
@@ -381,7 +447,7 @@ ${code}
 });
 
 // 📧 שליחת מייל עם הציון הסופי
-app.post("/api/submit-assignment", async (req, res) => {
+app.post("/api/submit-assignment", writeLogMiddlware, async (req, res) => {
   const {
     studentName,
     studentEmail,

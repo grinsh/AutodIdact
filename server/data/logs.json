@@ -1,0 +1,19 @@
+{
+  "logs": [
+    {
+      "userName": "שושי טעפ",
+      "date": "2025-12-29T18:03:46.297Z",
+      "endPoint": "/api/check-assignment"
+    },
+    {
+      "userName": "שושי טעפ",
+      "date": "2025-12-29T18:04:21.015Z",
+      "endPoint": "/api/save-mark"
+    },
+    {
+      "userName": "שושי טעפ",
+      "date": "2025-12-29T18:04:21.069Z",
+      "endPoint": "/api/submit-assignment"
+    }
+  ]
+}

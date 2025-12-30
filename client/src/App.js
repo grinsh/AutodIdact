@@ -24,27 +24,90 @@ const REACT_APP_VIDEOS_URL = process.env.REACT_APP_VIDEOS_URL;
 // const API_URL = "https://autodidact.co.il";
 let accessToken = "";
 
+// משתנה ששומר למעשה מצביע לפונקציה setAccessToken של הסטייט שב - App 
+let updateTokenInApp = null;
+
 const apiService = {
+
+  fetchWithAuth: async (url, options = {}) => {
+    let res = await fetch(url, {
+      ...options,
+      credentials: "include",
+      headers: {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${accessToken.trim()}`,
+      }
+    });
+
+    // אם קיבלנו 401 → ננסה לרענן את ה-token
+    if (res.status == 401) {
+      try {
+        const newToken = await apiService.refreshToken();
+        if (!newToken) {
+          throw new Error("Unauthorized - login required");
+        }
+        console.log(" ריענון טוקן הצליח, מנסה שוב את הבקשה...");
+
+        res = await fetch(url, {
+          ...options,
+          credentials: "include",
+          headers: {
+            ...(options.headers || {}),
+            Authorization: `Bearer ${newToken}`,
+          },
+        });
+        if (res.status === 401) {
+          console.error("🚫 עדיין Unauthorized גם אחרי ריענון — מנתק את המשתמש");
+          throw new Error("Unauthorized after refresh");
+        }
+
+      } catch (err) {
+        console.error("Automatic refresh failed, user must log in again");
+        throw err;
+      }
+    }
+    console.log(`✅ fetchWithAuth סיים בהצלחה (${res.status})`);
+    return res;
+  },
+
+  refreshToken: async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/refresh`, {
+        method: "POST",
+        credentials: "include"
+      });
+
+      if (!res.ok) throw new Error("Failed to refresh token");
+      const data = await res.json();
+      accessToken = data.accessToken;
+      // השמה ל - state ב - React את הטוקן המעודכן
+      if (updateTokenInApp)
+        updateTokenInApp(accessToken);
+      return accessToken;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  },
   // פונקציה שנקרא לה אחרי התחברות כדי לשמור את ה־token
   setToken: (token) => {
     accessToken = token;
+    if (updateTokenInApp)
+      updateTokenInApp(token);
   },
+
+  setTokenUdapter: (fn) => {
+    updateTokenInApp = fn;
+  }
+  ,
   getUsers: async () => {
-    const res = await fetch(`${API_URL}/api/users`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      }
-    });
+    const res = await apiService.fetchWithAuth(`${API_URL}/api/users`)
     return res.json();
   },
 
   getCourses: async () => {
     try {
-      const res = await fetch(`${API_URL}/api/courses`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        }
-      });
+      const res = await apiService.fetchWithAuth(`${API_URL}/api/courses`);
       return res.json();
     } catch (e) {
       throw e;
@@ -52,15 +115,15 @@ const apiService = {
   },
 
   getSchools: async () => {
-    const res = await fetch(`${API_URL}/api/schools`);
+    const res = await apiService.fetchWithAuth(`${API_URL}/api/schools`);
     const data = await res.json();
     return data;
   },
 
   login: async (schoolCode, username) => {
-    const res = await fetch(`${API_URL}/api/login`, {
+    const res = await apiService.fetchWithAuth(`${API_URL}/api/login`, {
       method: "POST",
-      credentials: "include",
+       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ schoolCode, username }),
     });
@@ -70,27 +133,23 @@ const apiService = {
   },
 
   checkAssignment: async (code, assignment, studentName, studentEmail) => {
-    const res = await fetch(`${API_URL}/api/check-assignment`, {
+    const res = await apiService.fetchWithAuth(`${API_URL}/api/check-assignment`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
+        // Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ code, assignment, studentName, studentEmail }),
     });
     if (!res.ok) throw new Error("Failed to check assignment");
     return res.json();
   },
+
   getStatistic: async (userId, courseId) => {
-    const res = await fetch(
-      `${API_URL}/api/users/${userId}/courses/${courseId}`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    }
-    );
+    const res = await apiService.fetchWithAuth(`${API_URL}/api/users/${userId}/courses/${courseId}`);
     return res.json();
   },
+
   // call to the function in the server that send email with the final mark
   submitAssignment: async (
     studentName,
@@ -100,7 +159,7 @@ const apiService = {
     grade,
     feedback
   ) => {
-    const res = await fetch(`${API_URL}/api/submit-assignment`, {
+    const res = await apiService.fetchWithAuth(`${API_URL}/api/submit-assignment`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -121,7 +180,7 @@ const apiService = {
 
   // call the function in server that write the mark in the file .
   saveMark: async (studentId, courseId, chapterId, grade, feedback) => {
-    const res = await fetch(`${API_URL}/api/save-mark`, {
+    const res = await apiService.fetchWithAuth(`${API_URL}/api/save-mark`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -140,7 +199,7 @@ const apiService = {
   },
 
   checkIfSubmitted: async (userId, courseId, chapterId) => {
-    const res = await fetch(`${API_URL}/api/check-submission`, {
+    const res = await apiService.fetchWithAuth(`${API_URL}/api/check-submission`, {
       method: "POST",
       headers: {
         "content-Type": "application/json",
@@ -155,9 +214,10 @@ const apiService = {
     if (!res.ok) throw new Error("failed to check subbmition");
     return res.json();
   },
+
   logout: async () => {
     try {
-      const result = await fetch(`${API_URL}/api/logout`, {
+      const result = await apiService.fetchWithAuth(`${API_URL}/api/logout`, {
         method: "POST",
         credentials: "include"
       })
@@ -1202,6 +1262,10 @@ export default function App() {
     if (!accessToken) return;
     fetchCourses();
   }, [accessToken]);
+
+  useEffect(() => {
+    apiService.setTokenUdapter(setAccessToken);
+  })
 
   const handleLogin = (user, token) => {
     apiService.setToken(token);
